@@ -6,6 +6,10 @@ import scipy
 mv = np.array([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
 epsilon_r = np.array([4, 6, 7.5, 10, 13, 16.5, 19, 23, 26.5, 30, 34, 37.5])
 
+
+mv2 = np.linspace(1, 20, 20)
+epsilon_r2 = mv2
+
 # def interpolate(x0, y0, padding=0.5):
 #     # Define a set of dense x values to apply the interpolated function on
 #     x = np.linspace(x0[0] - padding, x0[-1] + padding, x0.size * 100)

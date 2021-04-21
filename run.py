@@ -5,38 +5,32 @@ import dialectric
 
 
 # Sentinel-1 Altitude in meters arbitrary as long as it's a magnitude larger than the wavelength
-satellite_altitude = 50
+satellite_altitude = 30
 
 t_final = 110
-envelope = 10
+envelope = 5
 
 delta_mvs = np.zeros(len(dialectric.mv))
 delta_eps = np.zeros(len(dialectric.mv))
 delta_phis = np.zeros(len(dialectric.mv))
 
-for depth in np.linspace(.1, .8, 10):
+for depth in [0.5]:
     for i in range(0, len(dialectric.mv)):
-
+        print(f'Using a depth of : {depth}')
         # # get a sample pair of soil moistures
-        mv1 = dialectric.mv[0]
-        mv2 = dialectric.mv[i]
+        mv1 = dialectric.mv[i]
+        mv2 = dialectric.mv[0]
 
         # # Related Permittivities
-        epsilon_1 = dialectric.epsilon_r[0]
-        epsilon_2 = dialectric.epsilon_r[i]
-
-        # Define soil mediums
-        # soil_r = sm_model.medium(satellite_altitude, penetration_depth, 1)
+        epsilon_1 = dialectric.epsilon_r[i]
+        epsilon_2 = dialectric.epsilon_r[0]
 
         soil0 = sm_model.medium(
             satellite_altitude, depth, epsilon_2)
         soil1 = sm_model.medium(
             satellite_altitude, depth, epsilon_1)
 
-        # Setup Simulation
-        # wave_r = sm_model.microwave(soil_r, envelope=10, tfinal=500, dx=0.05)
-
-        dx = .075
+        dx = .02
 
         wave0 = sm_model.microwave(
             soil0, envelope=envelope, tfinal=t_final, dx=dx)
@@ -47,7 +41,7 @@ for depth in np.linspace(.1, .8, 10):
         wave0.solve()
         wave1.solve()
 
-        # sm_model.animate_multiple([wave0, wave1], 30)
+        sm_model.animate_multiple([wave0, wave1], 100)
 
         # Find a time to sample at
         index = int(100 / wave1.dt)
@@ -59,9 +53,16 @@ for depth in np.linspace(.1, .8, 10):
         # Calculate a wrapped offset in multiples of pi
         offset = wave0.x[np.argmax(waveform0)] - wave0.x[np.argmax(waveform1)]
         print(f'Offset in cm: {offset}')
-        offset *= (2 / sm_model.sentinel1_wavelength)
+
+        offset = ((offset / sm_model.sentinel1_wavelength) * 2)
+        cycle = np.abs(offset // sm_model.sentinel1_wavelength)
+        offset += (2 * cycle)
+
+        # offset = np.sign(offset) * (offset % sm_model.sentinel1_wavelength)
+        # offset = np.sign(offset) * unwrapped
+        # offset =  + 2
+
         print(f'Offset in pi radins: {offset}')
-        offset = offset % 2
         offset = np.round(offset, 2)
 
         # Plot waveforms
@@ -85,7 +86,7 @@ for depth in np.linspace(.1, .8, 10):
         delta_mvs[i] = delta_mv
         delta_phis[i] = delta_phi
 
-    delta_phis[delta_phis < 0] += 2
+    delta_phis = delta_phis
 
     plt.plot(delta_mvs, delta_phis, label=f'Delta phi (depth = {depth})')
 

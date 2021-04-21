@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 from matplotlib import rc
 rc('animation', html='jshtml')
 
-sentinel1_wavelength = 5.6  # cm
+sentinel1_wavelength = 5.66  # cm
 
 
 class medium:
@@ -19,8 +19,9 @@ class microwave:
     def __init__(self, medium, tfinal=1000, dx=.1, envelope=1):
 
         # Wave Parameters
+        self.omega_0 = 2 * np.pi / sentinel1_wavelength  # 5 Ghz
+        # timescale = 1/omega_0
 
-        self.omega_0 = 2 * np.pi / sentinel1_wavelength
         self.envelope_width = envelope  # envelope width of pulse
         self.medium = medium
 
@@ -28,11 +29,11 @@ class microwave:
 
         self.tfinal = tfinal
 
-        self.nx = 400.0  # number of points along the line
         self.dx = dx  # spatial grid size
         self.x = np.arange(0, medium.air_length + medium.soil_length,
                            self.dx)  # generate spatial grid
 
+        print(len(self.x))
         # Wave Initial Conditions
         self.u = np.zeros(len(self.x))
         self.psi = np.zeros(len(self.x))
@@ -46,7 +47,7 @@ class microwave:
         self.medium_boundary = int(self.medium.air_length / self.dx)
 
         s[self.medium_boundary::] = s2
-        self.dt = 1 * dx**2 / s1**2
+        self.dt = s1 * dx**2 / s1**2
 
         print(f'dt: {self.dt}')
 
@@ -60,11 +61,15 @@ class microwave:
         h = self.envelope_width
         envelope = np.exp(-(t - (3*h))**2 / h**2)
 
-        u[0] = np.sin(self.omega_0 * t) * envelope
         u[-1] = 0
-
-        psip[0] = np.cos(self.omega_0 * t) * envelope
         psip[-1] = 0
+
+        if t > 10*h:
+            psip[0] = psip[1]
+            u[0] = u[1]
+        else:
+            psip[0] = np.cos(self.omega_0 * t) * envelope
+            u[0] = np.sin(self.omega_0 * t) * envelope
 
         return u, psip
 
