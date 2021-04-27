@@ -5,7 +5,19 @@ import matplotlib.animation as animation
 from matplotlib import rc
 rc('animation', html='jshtml')
 
-sentinel1_wavelength = 5.6  # cm
+'''
+PHYS220 Computational Physics Final Project
+by Rowan Biessel
+
+Modeling the effect of a dielectric change on microwave propogation in
+order to illustrate the effect of soil-moisture changes on repeat-pass
+radar interferometric phase.
+
+This file contains all of the core code for the soil-moisture model.
+'''
+
+
+sentinel1_wavelength = 5.66  # cm
 
 
 class medium:
@@ -37,7 +49,7 @@ class microwave:
         self.u = np.zeros(len(self.x))
         self.psi = np.zeros(len(self.x))
 
-        # setup the s-array to be dependend on position
+        # setup the s-array to be dependend on position, find an appropriate delta t
         s1 = 1
         s2 = s1 / self.medium.dielectric
 
@@ -60,16 +72,17 @@ class microwave:
         h = self.envelope_width
         envelope = np.exp(-(t - (3*h))**2 / h**2)
 
+        # Oscillate boundary to produce singular wave packet
         u[0] = np.sin(self.omega_0 * t) * envelope
-        u[-1] = 0
-
         psip[0] = np.cos(self.omega_0 * t) * envelope
+
+        u[-1] = 0
         psip[-1] = 0
 
         return u, psip
 
     def solve(self):
-        t = 0  # Intialize time and empty arrays to gold time and displacements
+        t = 0
         psip = self.psi
         u = self.u
         while t < self.tfinal:
@@ -87,7 +100,7 @@ class microwave:
             t += self.dt
 
     def animate_func(self, nstep):
-        plt.style.use('dark_background')
+        # plt.style.use('dark_background')
         fig, ax = plt.subplots(figsize=(14, 6))
 
         line, = ax.plot([], [])
@@ -124,7 +137,7 @@ class microwave:
 
 def animate_multiple(waves, nstep):
 
-    plt.style.use('dark_background')
+    # plt.style.use('dark_background')
     fig, ax = plt.subplots(figsize=(14, 6))
 
     lines = [ax.plot([], [])[0] for _ in range(len(waves))]  # lines to animate

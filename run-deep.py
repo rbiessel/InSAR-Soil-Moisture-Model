@@ -4,27 +4,24 @@ import numpy as np
 import dialectric
 
 '''
-Execute the model/simulation and display the associated figures and animations.
+This file is for demonstration purposes and highlights the effect a change in dielectric has on a
+single wave. It should be observed that there is reflection at the boundary as well as the transmission.
 
 '''
 
 # Sentinel-1 Altitude in meters arbitrary as long as it's a magnitude larger than the wavelength
-satellite_altitude = 50
+satellite_altitude = 10
 
 t_final = 250
-envelope = 10
-dx = .075
-sample_time = 100
+envelope = 2
 
 delta_mvs = np.zeros(len(dialectric.mv))
 delta_eps = np.zeros(len(dialectric.mv))
 delta_phis = np.zeros(len(dialectric.mv))
 
-# np.linspace(.1, .6, 10): # use a single value or remove comment to try different depths
-for depth in [0.5]:
+for depth in [5]:  # np.linspace(.1, .6, 10):
     for i in range(0, len(dialectric.mv)):
         depth = np.round(depth, 2)
-
         # # get a sample pair of soil moistures
         mv1 = dialectric.mv[0]
         mv2 = dialectric.mv[i]
@@ -32,6 +29,9 @@ for depth in [0.5]:
         # # Related Permittivities
         epsilon_1 = dialectric.epsilon_r[0]
         epsilon_2 = dialectric.epsilon_r[i]
+
+        epsilon_1 = 3
+        epsilon_2 = 1
 
         # Define soil mediums
 
@@ -42,20 +42,23 @@ for depth in [0.5]:
 
         # Setup Simulation
 
+        dx = .05
+
         wave0 = sm_model.microwave(
             soil0, envelope=envelope, tfinal=t_final, dx=dx)
         wave1 = sm_model.microwave(
             soil1, envelope=envelope, tfinal=t_final, dx=dx)
 
+        wave1.omega_0 = 2 * np.pi / 1
+
         # Solve wave equation
         wave0.solve()
         wave1.solve()
 
-        sm_model.animate_multiple([wave0, wave1], 20)
-
+        sm_model.animate_multiple([wave1], 20)
+        break
         # Find a time to sample at
-        index = int(sample_time / wave1.dt)
-
+        index = int(100 / wave1.dt)
         # Sample waveforms at time t
         waveform0 = np.array(wave0.uarr[index])
         waveform1 = np.array(wave1.uarr[index])
@@ -69,16 +72,16 @@ for depth in [0.5]:
         offset = np.round(offset, 2)
 
         # Plot waveforms
-        plt.plot(wave0.x, np.array(wave0.uarr[index]), label=f'{mv1}mv')
-        plt.plot(wave1.x, np.array(wave1.uarr[index]), label=f'{mv2}mv')
-        plt.legend(loc='upper right')
-        plt.xlabel('x (cm)')
-        plt.ylabel('E Field Magnitude')
-        plt.title(
-            f'ε1 = {epsilon_1}, ε2 = {epsilon_2}, Phase Offset: {offset} π')
-        plt.show()
+        if True:
+            plt.plot(wave0.x, np.array(wave0.uarr[index]), label='mv1')
+            plt.plot(wave1.x, np.array(wave1.uarr[index]), label='mv2')
+            plt.legend(loc='upper right')
+            plt.xlabel('x (cm)')
+            plt.ylabel('E Field Magnitude')
+            plt.title(
+                f'ε1 = {epsilon_1}, ε2 = {epsilon_2}, Phase Offset: {offset} π')
+            plt.show()
 
-        # get plottable values
         delta_mv = np.abs(mv1 - mv2)
         delta_ep = np.abs(epsilon_1 - epsilon_2)
         delta_phi = offset
@@ -92,12 +95,3 @@ for depth in [0.5]:
     delta_phis[delta_phis < 0] += 2
 
     plt.plot(delta_mvs, delta_phis, label=f'Delta phi (depth = {depth})')
-
-plt.plot(delta_mvs, delta_eps / delta_eps.max(),
-         label='Delta Epsilon / Epsilon')
-
-plt.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
-plt.xlabel('Change in % Water Volume')
-plt.ylabel('Interferometric Phase')
-
-plt.show()
